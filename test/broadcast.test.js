@@ -105,3 +105,89 @@ test("splits long transcripts at nearby boundaries", () => {
   assert.ok(chunks.every((chunk) => Array.from(chunk).length <= 120));
   assert.equal(chunks.join(" "), text);
 });
+
+function bareBroadcast(providerOverrides = {}, demand = { captions: new Set(["es"]), audio: new Set(["es"]) }) {
+  const streams = [];
+  const providers = {
+    openTranscriptionStream(handlers) {
+      const stream = { ...handlers, sent: [], send(buffer) { this.sent.push(buffer); }, close() { this.closed = true; } };
+      streams.push(stream);
+      return stream;
+    },
+    translateText: async ({ text }) => text,
+    synthesizeSpeech: async ({ text }) => Buffer.from(text),
+    ...providerOverrides,
+  };
+  const broadcast = new Broadcast({
+    providers,
+    getSettings: () => ({
+      openaiKey: "sk", deepgramKey: "dg", inputLanguage: "en-US", outputLanguages: ["es"],
+      voice: "nova", translationModel: "m", speechModel: "s", transcriptionModel: "t",
+    }),
+    getDemand: () => demand,
+  });
+  const events = { audio: [], caption: [], notice: [] };
+  for (const name of Object.keys(events)) broadcast.on(name, (event) => events[name].push(event));
+  broadcast.start();
+  return { broadcast, streams, events, say: (text) => streams.at(-1).onTranscript(text, true) };
+}
+
+test("a failed speech clip is skipped without stalling the clips after it", async () => {
+  const { events, say } = bareBroadcast({
+    synthesizeSpeech: async ({ text }) => {
+      if (text === "Two.") throw new Error("speech service hiccup");
+      return Buffer.from(text);
+    },
+  });
+  say("One.");
+  say("Two.");
+  say("Three.");
+  for (let i = 0; i < 5; i++) await flush();
+  assert.deepEqual(events.audio.map((event) => event.audio.toString()), ["One.", "Three."]);
+  assert.equal(events.caption.length, 3, "captions still show for the failed clip");
+  assert.ok(events.notice.some((notice) => notice.message.includes("speech service hiccup")));
+});
+
+test("a failed translation does not block later sentences", async () => {
+  const { broadcast, events, say } = bareBroadcast({
+    translateText: async ({ text }) => {
+      if (text === "Bad.") throw new Error("timeout");
+      return text;
+    },
+  });
+  say("Good.");
+  say("Bad.");
+  say("Also good.");
+  for (let i = 0; i < 5; i++) await flush();
+  assert.equal(broadcast.running, true);
+  assert.deepEqual(events.caption.map((event) => event.text), ["Good.", "Also good."]);
+  assert.deepEqual(events.audio.map((event) => event.audio.toString()), ["Good.", "Also good."]);
+});
+
+test("reconnects when the transcription connection drops, and keeps sending audio", async () => {
+  const { broadcast, streams, events } = bareBroadcast();
+  streams[0].onClose({ expected: false });
+  await new Promise((resolve) => setTimeout(resolve, 600));
+  assert.equal(streams.length, 2);
+  broadcast.pushAudio(Buffer.from([1, 2]));
+  assert.equal(streams[1].sent.length, 1);
+  assert.ok(events.notice.some((notice) => notice.message.includes("Reconnecting")));
+  broadcast.stop();
+});
+
+test("does not reconnect after the host stops", async () => {
+  const { broadcast, streams } = bareBroadcast();
+  broadcast.stop();
+  streams[0].onClose({ expected: false });
+  await new Promise((resolve) => setTimeout(resolve, 600));
+  assert.equal(streams.length, 1);
+});
+
+test("if translation stalls, the backlog is capped and the host is warned", async () => {
+  const { broadcast, events, say } = bareBroadcast({ translateText: () => new Promise(() => {}) });
+  for (let i = 0; i < 100; i++) say(`Sentence ${i}.`);
+  await flush();
+  assert.ok(broadcast.pendingTranslations <= 60);
+  assert.ok(events.notice.some((notice) => notice.message.includes("falling behind")));
+  broadcast.stop();
+});

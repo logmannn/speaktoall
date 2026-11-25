@@ -1,11 +1,10 @@
 import { RTL_LANGUAGES, languageName } from "./languages.js";
+import { PlaybackQueue } from "./playback.js";
 
 const $ = (id) => document.getElementById(id);
 const mode = document.body.dataset.mode; // "listen" (phones) or "display" (projector)
 const params = new URLSearchParams(location.search);
 let maxCaptions = 80;
-const MIN_RATE = 1;
-const MAX_RATE = 1.4;
 
 const storage = {
   get(key) { try { return localStorage.getItem(key); } catch { return null; } },
@@ -31,7 +30,6 @@ let live = false;
 let sessionId = null;
 let socket = null;
 let retry = 0;
-let audioOn = false;
 
 // ---------- Connection ----------
 
@@ -43,7 +41,7 @@ function connect() {
     try { message = JSON.parse(data); } catch { return; }
     if (message.type === "state") onState(message);
     else if (message.type === "caption" && message.language === language) addCaption(message.text);
-    else if (message.type === "audio" && message.language === language && audioOn) enqueueAudio(message.audio);
+    else if (message.type === "audio" && message.language === language) audio.push(message.audio);
   };
   socket.onclose = () => {
     setStatus("Reconnecting…");
@@ -68,7 +66,7 @@ function onState(state) {
 
 function sendSelection() {
   if (socket?.readyState !== WebSocket.OPEN) return;
-  socket.send(JSON.stringify({ type: "select", language, audio: audioOn }));
+  socket.send(JSON.stringify({ type: "select", language, audio: audio.enabled }));
 }
 
 function selectLanguage(code) {
@@ -145,17 +143,47 @@ if (mode === "display") {
 }
 
 // ---------- Spoken translation ----------
-// The server releases audio in speech order, so clips play first-in, first-out.
-// Playback speeds up a little when clips pile up and slows down when caught up.
 
 const player = new Audio();
 player.preload = "auto";
 player.playsInline = true;
 player.preservesPitch = true;
-let queue = [];
-let playing = false;
-let rate = MIN_RATE;
 let watchdog = null;
+
+function applyRate(rate) {
+  player.defaultPlaybackRate = rate;
+  player.playbackRate = rate;
+}
+
+const audio = new PlaybackQueue({
+  play(base64, rate) {
+    player.src = `data:audio/mpeg;base64,${base64}`;
+    applyRate(rate);
+    clearTimeout(watchdog);
+    watchdog = setTimeout(finishClip, 30000);
+    player.play().catch(finishClip);
+  },
+  setRate: applyRate,
+});
+
+function finishClip() {
+  clearTimeout(watchdog);
+  audio.finished();
+}
+
+player.addEventListener("ended", finishClip);
+player.addEventListener("error", finishClip);
+player.addEventListener("loadedmetadata", () => {
+  if (!Number.isFinite(player.duration)) return;
+  clearTimeout(watchdog);
+  watchdog = setTimeout(finishClip, (player.duration / audio.rate) * 1000 + 3000);
+});
+
+function clearAudio() {
+  clearTimeout(watchdog);
+  if (audio.playing) player.pause();
+  audio.clear();
+}
 
 function silentWavUrl() {
   const samples = 800;
@@ -168,57 +196,11 @@ function silentWavUrl() {
   return URL.createObjectURL(new Blob([view], { type: "audio/wav" }));
 }
 
-function setRate(next) {
-  rate = Math.min(MAX_RATE, Math.max(MIN_RATE, next));
-  player.defaultPlaybackRate = rate;
-  player.playbackRate = rate;
-}
-
-function enqueueAudio(base64) {
-  queue.push(base64);
-  if (queue.length >= 2) setRate(rate + 0.1);
-  playNext();
-}
-
-function playNext() {
-  if (playing || !audioOn || !queue.length) return;
-  playing = true;
-  player.src = `data:audio/mpeg;base64,${queue.shift()}`;
-  setRate(rate);
-  clearTimeout(watchdog);
-  watchdog = setTimeout(finishClip, 30000);
-  player.play().catch(finishClip);
-}
-
-function finishClip() {
-  clearTimeout(watchdog);
-  if (!playing) return;
-  playing = false;
-  if (!queue.length) setRate(rate - 0.1);
-  playNext();
-}
-
-player.addEventListener("ended", finishClip);
-player.addEventListener("error", finishClip);
-player.addEventListener("loadedmetadata", () => {
-  if (!Number.isFinite(player.duration)) return;
-  clearTimeout(watchdog);
-  watchdog = setTimeout(finishClip, (player.duration / rate) * 1000 + 3000);
-});
-
-function clearAudio() {
-  queue = [];
-  clearTimeout(watchdog);
-  if (playing) player.pause();
-  playing = false;
-  setRate(MIN_RATE);
-}
-
 $("audio")?.addEventListener("click", async () => {
-  audioOn = !audioOn;
-  $("audio").setAttribute("aria-pressed", String(audioOn));
-  $("audio").textContent = audioOn ? "🔇 Stop audio (captions only)" : "🔊 Tap to hear translation";
-  if (audioOn) {
+  audio.enabled = !audio.enabled;
+  $("audio").setAttribute("aria-pressed", String(audio.enabled));
+  $("audio").textContent = audio.enabled ? "🔇 Stop audio (captions only)" : "🔊 Tap to hear translation";
+  if (audio.enabled) {
     // Phones only allow sound after a tap; playing silence here unlocks the player.
     player.src = silentWavUrl();
     await player.play().catch(() => {});
