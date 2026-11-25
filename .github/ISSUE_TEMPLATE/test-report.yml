@@ -1,0 +1,39 @@
+name: Test report
+description: Tell us how Speak To All worked for you, good or bad.
+labels: ["test report"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for testing! Please don't include API keys.
+  - type: dropdown
+    id: os
+    attributes:
+      label: Broadcasting computer
+      options: [Mac (Apple chip), Mac (Intel), Windows, Linux, Other]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Speak To All version
+      placeholder: e.g. 0.1.1
+  - type: textarea
+    id: setup
+    attributes:
+      label: How you used it
+      description: Spoken and translated languages, number of listeners, phones / projector / OBS / ProPresenter, how long it ran, type of WiFi.
+    validations:
+      required: true
+  - type: textarea
+    id: worked
+    attributes:
+      label: What worked well
+  - type: textarea
+    id: problems
+    attributes:
+      label: What didn't work or was confusing
+  - type: textarea
+    id: quality
+    attributes:
+      label: Translation quality (optional)
+      description: Any languages where translations were noticeably good or poor.

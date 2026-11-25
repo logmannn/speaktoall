@@ -1,0 +1,35 @@
+name: Bug report
+description: Something broke or behaved wrongly.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: Please don't include API keys.
+  - type: dropdown
+    id: os
+    attributes:
+      label: Broadcasting computer
+      options: [Mac (Apple chip), Mac (Intel), Windows, Linux, Other]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Speak To All version
+      placeholder: e.g. 0.1.1
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you expected, what happened instead, and any error message shown.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+  - type: input
+    id: listeners
+    attributes:
+      label: Listener devices (if relevant)
+      placeholder: e.g. iPhone 13 Safari, Android Chrome, OBS browser source

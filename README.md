@@ -1,5 +1,11 @@
 # Speak To All
 
+> **Early access.** Speak To All works and is in use, but it is new and not
+> everything has been tested on every kind of computer and network yet. Try it
+> before relying on it for a live service, and please
+> [tell us how it went](../../issues/new/choose). Testers and contributors are
+> very welcome; see [Help wanted](#help-wanted).
+
 Free, open-source live translation for churches, meetings, and events. It runs
 entirely on your own computer with your own API keys: no accounts, no
 subscription, and no middleman server.
@@ -13,6 +19,17 @@ microphone ─► this computer ──► Deepgram (speech to text)
                     │      └──► OpenAI (translation, optional speech)
                     └── local WiFi ──► phones and projector
 ```
+
+## What's been tested
+
+| Area | Status |
+| --- | --- |
+| Translation, captions, and spoken audio with many phones and languages | Automated tests, and used live on a Mac |
+| Mac app (Apple chip and Intel) | Built and launched; install-from-download flow needs more testers |
+| Windows app | Builds, but **not yet tried on a real Windows PC** |
+| Linux app | Builds, but **not yet launched** |
+| Full-length services on church WiFi | **Needs testers** |
+| Caption screens in OBS and ProPresenter | Tested in a browser; **not yet in OBS or ProPresenter** |
 
 ## Install
 
@@ -183,6 +200,21 @@ notes before publishing if needed.
 
 Contributions welcome: other providers (local Whisper, other translation
 models), packaged installers, more interface languages.
+
+## Help wanted
+
+This is a free, volunteer project. The most useful help right now:
+
+- **Testers:** install it on Windows, Linux, or a Mac, run a real service or
+  meeting, and [report what happened](../../issues/new/choose): what worked,
+  what was confusing, and anything that broke. Reports about translation quality
+  in specific languages are especially helpful.
+- **Contributors:** pull requests are welcome. Ideas: support for other
+  transcription/translation providers (including fully local models), signed
+  installers, more interface languages, and accessibility improvements. See
+  [CONTRIBUTING.md](CONTRIBUTING.md).
+- **Spread the word** to churches and groups that need translation but can't
+  afford a subscription.
 
 ## License
 
