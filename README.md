@@ -33,8 +33,11 @@ certificate, so the first launch needs one extra step:
   If macOS says it "could not verify" the app, open **System Settings → Privacy &
   Security**, scroll down, and click **Open Anyway**. Allow microphone access when asked.
 - **Windows:** run the `.exe`. If SmartScreen appears, click **More info → Run anyway**.
-  Allow access on private networks when Windows Firewall asks.
-- **Linux:** make the AppImage executable (`chmod +x`) and run it.
+  When Windows Firewall asks, allow access. If the church WiFi is marked as a
+  *Public* network in Windows, tick **Public networks** too, or phones won't connect.
+- **Linux:** make the AppImage executable (`chmod +x`) and run it. On Ubuntu
+  22.04 and newer, first install FUSE 2: `sudo apt install libfuse2`
+  (`libfuse2t64` on 24.04).
 
 <details>
 <summary>Or run from source (needs Node.js)</summary>
