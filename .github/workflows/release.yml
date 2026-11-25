@@ -59,7 +59,7 @@ jobs:
           {
             echo "## What's new"
             echo
-            git log "$range" --no-merges --pretty='- %s'
+            git log "$range" --no-merges --invert-grep --grep='^Version [0-9]' --pretty='- %s'
             echo
             echo "---"
             echo
