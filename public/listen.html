@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Live translation</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/listen.css">
+  <script type="module" src="/assets/listen.js"></script>
+</head>
+<body data-mode="listen">
+  <header class="bar">
+    <button id="change-language" type="button" hidden></button>
+    <span id="status" class="pill" role="status">Connecting…</span>
+  </header>
+
+  <section id="picker" class="picker" hidden>
+    <h1>Choose your language</h1>
+    <div id="picker-options" class="picker-options"></div>
+  </section>
+
+  <p id="waiting" class="waiting">Waiting for the broadcast to start…</p>
+  <main id="captions" class="captions" role="log" aria-live="polite"></main>
+
+  <footer class="controls" id="controls" hidden>
+    <button id="audio" class="primary" type="button" aria-pressed="false">🔊 Tap to hear translation</button>
+  </footer>
+</body>
+</html>

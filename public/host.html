@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Speak To All</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <link rel="stylesheet" href="/assets/host.css">
+  <script type="module" src="/assets/host.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>Speak To All</h1>
+    <span id="status" class="pill">Offline</span>
+  </header>
+
+  <div id="notice" class="notice" role="alert" hidden>
+    <span id="notice-text"></span>
+    <button id="notice-close" type="button" aria-label="Dismiss">✕</button>
+  </div>
+
+  <main class="layout">
+    <section class="column">
+      <div class="card" id="keys-card">
+        <h2>1 · Your API keys</h2>
+        <div id="keys-saved" hidden>
+          <p class="small"><span class="pill ok">Keys saved on this computer</span></p>
+          <button id="keys-edit" type="button">Change keys</button>
+        </div>
+        <form id="keys-form">
+          <p class="small muted">Keys are stored encrypted on this computer and sent only to OpenAI and Deepgram.</p>
+          <label for="openai-key">OpenAI API key · <a href="https://platform.openai.com/api-keys" target="_blank">get one</a></label>
+          <input id="openai-key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-…">
+          <label for="deepgram-key">Deepgram API key · <a href="https://console.deepgram.com/" target="_blank">get one</a></label>
+          <input id="deepgram-key" type="password" autocomplete="off" spellcheck="false" placeholder="Deepgram key">
+          <div class="row">
+            <button class="primary" type="submit">Save and check keys</button>
+            <button id="keys-cancel" type="button" hidden>Cancel</button>
+          </div>
+          <p id="keys-result" class="small" role="status"></p>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>2 · Speaker</h2>
+        <label for="input-language">Spoken language</label>
+        <select id="input-language"></select>
+        <label for="microphone">Microphone or audio input</label>
+        <select id="microphone"><option value="">Default microphone</option></select>
+        <div class="meter" aria-label="Microphone level"><div id="meter-fill"></div></div>
+        <button id="mic-test" type="button">Test microphone</button>
+      </div>
+
+      <div class="card">
+        <h2>3 · Translate into</h2>
+        <input id="language-filter" type="search" placeholder="Filter languages" aria-label="Filter languages">
+        <div id="output-languages" class="chips" role="group" aria-label="Output languages"></div>
+        <label for="voice">Spoken translation voice</label>
+        <select id="voice"></select>
+        <details>
+          <summary>Models</summary>
+          <p class="small muted">Use any model your keys can access. Leave blank for the default.</p>
+          <label for="translation-model">Translation (OpenAI)</label>
+          <input id="translation-model" type="text" spellcheck="false">
+          <label for="speech-model">Speech (OpenAI)</label>
+          <input id="speech-model" type="text" spellcheck="false">
+          <label for="transcription-model">Transcription (Deepgram)</label>
+          <input id="transcription-model" type="text" spellcheck="false">
+        </details>
+      </div>
+    </section>
+
+    <section class="column">
+      <div class="card start-card">
+        <button id="start" class="primary big" type="button">Start broadcast</button>
+        <p id="listener-summary" class="small muted">No listeners connected</p>
+      </div>
+
+      <div class="card">
+        <h2>Listeners join here</h2>
+        <p class="small muted">Phones must be on the same WiFi as this computer.</p>
+        <div id="share" class="share">
+          <div id="qr" class="qr" aria-hidden="true"></div>
+          <div>
+            <a id="share-url" class="share-url" href="#" target="_blank"></a>
+            <div class="row">
+              <button id="copy-url" type="button">Copy link</button>
+              <a id="display-url" href="#" target="_blank" class="small">Projector captions</a>
+            </div>
+            <ul id="other-links" class="small muted"></ul>
+          </div>
+        </div>
+        <p id="no-network" class="small" hidden>No network found. Connect this computer to WiFi.</p>
+
+        <details id="screen-builder">
+          <summary>Captions on a screen, OBS, or ProPresenter</summary>
+          <p class="small muted">Open this link on the computer driving the screen, or add it as a browser source / web view. Use “Transparent” to overlay captions on video.</p>
+          <div class="builder">
+            <div>
+              <label for="screen-language">Language</label>
+              <select id="screen-language"></select>
+            </div>
+            <div>
+              <label for="screen-theme">Background</label>
+              <select id="screen-theme">
+                <option value="dark">Black</option>
+                <option value="light">White</option>
+                <option value="transparent">Transparent (overlay)</option>
+              </select>
+            </div>
+            <div>
+              <label for="screen-size">Text size</label>
+              <select id="screen-size">
+                <option value="">Fit screen</option>
+                <option value="36">Small</option>
+                <option value="56">Medium</option>
+                <option value="80">Large</option>
+                <option value="110">Extra large</option>
+              </select>
+            </div>
+            <div>
+              <label for="screen-lines">Lines shown</label>
+              <select id="screen-lines">
+                <option value="1">1</option>
+                <option value="2" selected>2</option>
+                <option value="3">3</option>
+                <option value="5">5</option>
+              </select>
+            </div>
+          </div>
+          <label for="screen-url">Link</label>
+          <input id="screen-url" type="text" readonly>
+          <div class="row">
+            <button id="copy-screen-url" type="button">Copy link</button>
+            <button id="copy-screen-iframe" type="button">Copy embed code</button>
+            <a id="open-screen-url" href="#" target="_blank" class="small">Open</a>
+          </div>
+        </details>
+      </div>
+
+      <div class="card transcript-card">
+        <h2>Live transcript</h2>
+        <div id="transcript" class="transcript" aria-live="polite"></div>
+        <p id="interim" class="interim muted"></p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
