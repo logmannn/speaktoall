@@ -21,8 +21,7 @@ Download the installer for your computer from the
 
 | Computer | File |
 | --- | --- |
-| Mac with Apple chip (M1 or newer) | `SpeakToAll-…-mac-arm64.dmg` |
-| Mac with Intel chip | `SpeakToAll-…-mac-x64.dmg` |
+| Mac (Apple chip or Intel) | `SpeakToAll-…-mac-universal.dmg` |
 | Windows | `SpeakToAll-…-win-x64.exe` |
 | Linux | `SpeakToAll-…-linux-x86_64.AppImage` |
 
@@ -32,7 +31,7 @@ certificate, so the first launch needs one extra step:
 - **Mac:** open the `.dmg` and drag Speak To All into Applications, then open it.
   If macOS says it "could not verify" the app, open **System Settings → Privacy &
   Security**, scroll down, and click **Open Anyway**. Allow microphone access when asked.
-  After an update, macOS may ask to let Speak To All use "speaktoall-local Safe
+  After an update, macOS may ask to let Speak To All use "Speak To All Safe
   Storage" in your keychain; click **Always Allow** to keep your saved API keys.
 - **Windows:** run the `.exe`. If SmartScreen appears, click **More info → Run anyway**.
   When Windows Firewall asks, allow access. If the church WiFi is marked as a
@@ -151,10 +150,15 @@ the host page; any model your keys can access works.
 
 ```sh
 npm install
-npm start     # desktop app
+npm start     # desktop app (development mode, see below)
 npm test      # tests use fake providers and spend no API credits
 npm run dist  # build an installer for this OS into dist/
 ```
+
+In development mode (`npm start`) the app uses its own settings folder
+(`speaktoall-local-dev`) and saves API keys unencrypted in an owner-only file
+instead of the keychain, so macOS doesn't ask for keychain access on every run.
+You can also set `OPENAI_API_KEY` and `DEEPGRAM_API_KEY` in the environment.
 
 To publish a release, bump `version` in `package.json`, commit, then push a tag
 (`git tag v0.2.0 && git push --tags`). GitHub Actions builds the Mac, Windows,
