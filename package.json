@@ -1,6 +1,6 @@
 {
   "name": "speaktoall-local",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Free, open-source live sermon/meeting translation that runs on your own computer with your own API keys.",
   "license": "MIT",
   "author": "Speak To All contributors",
@@ -45,7 +45,12 @@
     ],
     "mac": {
       "target": [
-        { "target": "dmg", "arch": ["universal"] }
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
       ],
       "category": "public.app-category.productivity",
       "identity": "-",
@@ -59,7 +64,12 @@
     },
     "win": {
       "target": [
-        { "target": "nsis", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
       ]
     },
     "nsis": {
@@ -69,7 +79,12 @@
     },
     "linux": {
       "target": [
-        { "target": "AppImage", "arch": ["x64"] }
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "category": "AudioVideo"
     }
