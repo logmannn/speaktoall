@@ -4,12 +4,12 @@ import { createStore } from "../src/store.js";
 import { startServer } from "../src/server.js";
 
 const PREFERRED_PORT = Number(process.env.PORT) || 4949;
-// Same settings folder whether run from source or installed under the product name.
-// The keychain entry is named after the app, so installed and source copies must
-// share one name to read the same saved keys. The visible name is still "Speak To All".
-app.setName("speaktoall-local");
+// Running from source (`npm start`) keeps its own settings and never touches the
+// keychain: unsigned dev builds would trigger a macOS keychain prompt constantly.
+const isDev = !app.isPackaged;
 // SPEAKTOALL_DATA_DIR runs a separate copy, e.g. for testing next to a running one.
-app.setPath("userData", process.env.SPEAKTOALL_DATA_DIR || join(app.getPath("appData"), "speaktoall-local"));
+app.setPath("userData", process.env.SPEAKTOALL_DATA_DIR ||
+  join(app.getPath("appData"), isDev ? "speaktoall-local-dev" : "speaktoall-local"));
 let server;
 let window;
 
@@ -24,24 +24,26 @@ async function startOnFreePort(store) {
   throw new Error(`Ports ${PREFERRED_PORT}-${PREFERRED_PORT + 9} are all in use.`);
 }
 
-// Stored key formats: "enc2:" async keychain encryption, "enc:" the older sync
-// encryption (re-saved as enc2 on load), otherwise plain text (no keychain available).
-async function createStoreWithKeychain() {
-  const available = await safeStorage.isAsyncEncryptionAvailable();
+// Installed app: keys are encrypted with the OS keychain ("enc2:" prefix). The
+// keychain is only touched when a key is actually read or saved.
+// From source: keys are saved unencrypted in an owner-only file, or come from
+// OPENAI_API_KEY / DEEPGRAM_API_KEY.
+async function openStore() {
+  const file = join(app.getPath("userData"), "settings.json");
+  if (isDev) return createStore({ file });
+  let available;
+  const keychainAvailable = async () => (available ??= await safeStorage.isAsyncEncryptionAvailable());
   return createStore({
-    file: join(app.getPath("userData"), "settings.json"),
+    file,
     async encrypt(value) {
-      return available ? `enc2:${(await safeStorage.encryptStringAsync(value)).toString("base64")}` : value;
+      return await keychainAvailable()
+        ? `enc2:${(await safeStorage.encryptStringAsync(value)).toString("base64")}`
+        : value;
     },
     async decrypt(value) {
-      if (value.startsWith("enc2:")) {
-        const { result, shouldReEncrypt } = await safeStorage.decryptStringAsync(Buffer.from(value.slice(5), "base64"));
-        return { value: result, stale: shouldReEncrypt };
-      }
-      if (value.startsWith("enc:")) {
-        return { value: safeStorage.decryptString(Buffer.from(value.slice(4), "base64")), stale: available };
-      }
-      return { value, stale: available };
+      if (!value.startsWith("enc2:")) return { value, stale: await keychainAvailable() };
+      const { result, shouldReEncrypt } = await safeStorage.decryptStringAsync(Buffer.from(value.slice(5), "base64"));
+      return { value: result, stale: shouldReEncrypt };
     },
   });
 }
@@ -84,7 +86,7 @@ if (!app.requestSingleInstanceLock()) {
 
   app.whenReady().then(async () => {
     try {
-      server = await startOnFreePort(await createStoreWithKeychain());
+      server = await startOnFreePort(await openStore());
       // Don't block startup on the permission prompt; capture waits for it anyway.
       if (process.platform === "darwin") systemPreferences.askForMediaAccess("microphone").catch(() => {});
       // Keep translating if the screen locks during a long service.
