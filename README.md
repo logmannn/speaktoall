@@ -124,6 +124,9 @@ translation.
 - API keys are encrypted with your operating system's keychain and stored only
   on this computer. They are never sent to listeners.
 - Audio and text go directly from this computer to Deepgram and OpenAI.
+- On launch the app asks GitHub whether a newer version exists, and shows a
+  notice with what's new and a download link. It never downloads or installs
+  anything by itself. Set `SPEAKTOALL_NO_UPDATE_CHECK=1` to turn the check off.
 - The host controls (`/host`) only work on the broadcasting computer itself.
   Anyone on the same WiFi can open the listener page.
 
@@ -153,9 +156,15 @@ npm test      # tests use fake providers and spend no API credits
 npm run dist  # build an installer for this OS into dist/
 ```
 
-To publish a release, bump `version` in `package.json`, then push a tag
+To publish a release, bump `version` in `package.json`, commit, then push a tag
 (`git tag v0.2.0 && git push --tags`). GitHub Actions builds the Mac, Windows,
 and Linux installers and attaches them to a draft release; review and publish it.
+Once published, existing installs show an update notice.
+
+Release notes are generated from the commit messages since the previous tag, and
+the app shows them under **What's new**. Write commit subjects for the people
+using the app ("Add transparent caption overlay for OBS"), and edit the draft's
+notes before publishing if needed.
 
 | Path | What it does |
 | --- | --- |

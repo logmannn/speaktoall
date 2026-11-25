@@ -4,6 +4,8 @@
   "description": "Free, open-source live sermon/meeting translation that runs on your own computer with your own API keys.",
   "license": "MIT",
   "author": "Speak To All contributors",
+  "repository": "github:logmannn/speaktoall",
+  "homepage": "https://github.com/logmannn/speaktoall",
   "private": true,
   "type": "module",
   "main": "electron/main.js",

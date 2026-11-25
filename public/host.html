@@ -19,6 +19,20 @@
     <button id="notice-close" type="button" aria-label="Dismiss">✕</button>
   </div>
 
+  <section id="update" class="update" hidden>
+    <div class="update-row">
+      <p><strong id="update-title"></strong> <span id="update-current" class="muted small"></span></p>
+      <div class="update-actions">
+        <a id="update-download" class="button primary" href="#" target="_blank">Download</a>
+        <button id="update-dismiss" type="button">Later</button>
+      </div>
+    </div>
+    <details id="update-details">
+      <summary>What's new</summary>
+      <div id="update-notes" class="update-notes"></div>
+    </details>
+  </section>
+
   <main class="layout">
     <section class="column">
       <div class="card" id="keys-card">

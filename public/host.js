@@ -1,6 +1,10 @@
 import { INPUT_LANGUAGES, OUTPUT_LANGUAGES, TTS_VOICES, RTL_LANGUAGES, languageName } from "./languages.js";
 
 const $ = (id) => document.getElementById(id);
+const storage = {
+  get(key) { try { return localStorage.getItem(key); } catch { return null; } },
+  set(key, value) { try { localStorage.setItem(key, value); } catch {} },
+};
 const MAX_TRANSCRIPT_ENTRIES = 200;
 
 let settings = null;
@@ -119,7 +123,7 @@ function buildControls() {
 
 async function listMicrophones() {
   const select = $("microphone");
-  const saved = localStorage.getItem("microphone") || "";
+  const saved = storage.get("microphone") || "";
   const devices = (await navigator.mediaDevices.enumerateDevices()).filter((device) => device.kind === "audioinput");
   select.replaceChildren(new Option("Default microphone", ""), ...devices
     .filter((device) => device.deviceId && device.deviceId !== "default")
@@ -173,7 +177,7 @@ $("mic-test").addEventListener("click", async () => {
 });
 
 $("microphone").addEventListener("change", async () => {
-  localStorage.setItem("microphone", $("microphone").value);
+  storage.set("microphone", $("microphone").value);
   if (!capture) return;
   stopCapture();
   try {
@@ -349,6 +353,55 @@ function hideNotice() {
 }
 $("notice-close").addEventListener("click", hideNotice);
 
+// ---------- Updates ----------
+// Release notes come from GitHub, so they are rendered as plain text only.
+
+function plainText(markdown) {
+  return markdown
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/[*_`]+/g, "")
+    .trim();
+}
+
+function renderReleaseNotes(release) {
+  const section = document.createElement("section");
+  const heading = document.createElement("h3");
+  heading.textContent = release.name === release.version || release.name === `v${release.version}`
+    ? `Version ${release.version}`
+    : `${release.name} (${release.version})`;
+  section.append(heading);
+  let list = null;
+  // Anything after a "---" line is meant for the GitHub page, not the app.
+  for (const line of release.notes.split(/^-{3,}\s*$/m)[0].split(/\r?\n/)) {
+    const bullet = /^\s*[-*+]\s+(.*)$/.exec(line);
+    const text = plainText(bullet ? bullet[1] : line.replace(/^#+\s*/, ""));
+    if (!text || /^(what's new|full changelog)/i.test(text)) continue;
+    if (bullet) {
+      list ??= section.appendChild(document.createElement("ul"));
+      list.appendChild(document.createElement("li")).textContent = text;
+    } else {
+      list = null;
+      section.appendChild(document.createElement("p")).textContent = text;
+    }
+  }
+  if (!release.notes.trim()) section.appendChild(document.createElement("p")).textContent = "No notes for this release.";
+  return section;
+}
+
+async function checkForUpdate() {
+  const update = await api("/api/update");
+  if (!update.available || storage.get("dismissedUpdate") === update.latest) return;
+  $("update-title").textContent = `Speak To All ${update.latest} is available.`;
+  $("update-current").textContent = `You have ${update.current}.`;
+  $("update-download").href = update.url;
+  $("update-notes").replaceChildren(...update.releases.map(renderReleaseNotes));
+  $("update").hidden = false;
+  $("update-dismiss").onclick = () => {
+    storage.set("dismissedUpdate", update.latest);
+    $("update").hidden = true;
+  };
+}
+
 // ---------- Boot ----------
 
 buildControls();
@@ -360,3 +413,4 @@ loadShareLinks().catch((error) => showNotice(`Could not find network address: ${
 // WiFi can change mid-session (laptop roams, DHCP renews).
 setInterval(() => loadShareLinks().catch(() => {}), 15000);
 connect();
+checkForUpdate().catch(() => {});

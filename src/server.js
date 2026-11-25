@@ -10,6 +10,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import QRCode from "qrcode";
 import { Broadcast } from "./broadcast.js";
 import { realProviders, verifyKeys } from "./providers.js";
+import { defaultUpdateChecker } from "./updates.js";
 
 const PUBLIC_DIR = fileURLToPath(new URL("../public/", import.meta.url));
 const MAX_LISTENERS = 1000;
@@ -76,7 +77,7 @@ function sendJson(res, status, body) {
   res.end(JSON.stringify(body));
 }
 
-export async function startServer({ store, port = 4949, host = "0.0.0.0", providers = realProviders, verify = verifyKeys }) {
+export async function startServer({ store, port = 4949, host = "0.0.0.0", providers = realProviders, verify = verifyKeys, updates = defaultUpdateChecker() }) {
   const files = readStaticFiles();
   const listeners = new Set();
   const hosts = new Set();
@@ -147,6 +148,9 @@ export async function startServer({ store, port = 4949, host = "0.0.0.0", provid
     if (pathname === "/api/verify-keys" && req.method === "POST") {
       const { openaiKey, deepgramKey } = store.get();
       return sendJson(res, 200, await verify({ openaiKey, deepgramKey }));
+    }
+    if (pathname === "/api/update" && req.method === "GET") {
+      return sendJson(res, 200, await updates.check());
     }
     if (pathname === "/api/share" && req.method === "GET") {
       return sendJson(res, 200, { links: await shareLinks(), localUrl: `http://localhost:${actualPort}/` });

@@ -47,6 +47,25 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # Release notes = commit subjects since the previous version tag. The app
+      # shows these in its "What's new" list, so write commit subjects for users.
+      - name: Write release notes
+        run: |
+          previous=$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)
+          range="${previous:+$previous..}${GITHUB_REF_NAME}"
+          {
+            echo "## What's new"
+            echo
+            git log "$range" --no-merges --pretty='- %s'
+            echo
+            echo "---"
+            echo
+            echo "Download the installer for your computer below. See the README for first-launch steps."
+          } > release-notes.md
+          cat release-notes.md
       - uses: actions/download-artifact@v4
         with:
           path: installers
@@ -55,4 +74,5 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           draft: true
+          body_path: release-notes.md
           files: installers/*

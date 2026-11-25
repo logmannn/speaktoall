@@ -89,3 +89,26 @@ button.big { width: 100%; padding: 1rem; font-size: 1.15rem; border-radius: 12px
 .transcript .translation { margin: 0.2rem 0 0; color: var(--muted); }
 .transcript .translation b { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; margin-right: 0.4rem; color: var(--accent); }
 .interim { min-height: 1.4em; font-style: italic; margin: 0.6rem 0 0; }
+
+.update {
+  margin: 1rem 1.25rem 0;
+  padding: 0.8rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+.update-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem; }
+.update-row p { margin: 0; }
+.update-actions { display: flex; gap: 0.5rem; }
+a.button {
+  display: inline-block;
+  text-decoration: none;
+  border-radius: 10px;
+  padding: 0.55rem 0.9rem;
+}
+a.button.primary { background: var(--accent); color: var(--accent-text); font-weight: 600; }
+.update details { margin-top: 0.6rem; }
+.update-notes { max-height: 260px; overflow-y: auto; font-size: 0.9rem; }
+.update-notes h3 { font-size: 0.9rem; margin: 0.8rem 0 0.3rem; }
+.update-notes ul { margin: 0; padding-left: 1.2rem; }
+.update-notes p { margin: 0.3rem 0; }

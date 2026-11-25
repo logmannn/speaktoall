@@ -20,7 +20,8 @@ async function setup() {
     translateText: async ({ text }) => `es:${text}`,
     synthesizeSpeech: async ({ text }) => Buffer.from(text),
   };
-  const app = await startServer({ store, port: 0, host: "127.0.0.1", providers });
+  const updates = { check: async () => ({ current: "0.1.0", available: true, latest: "0.2.0", releases: [] }) };
+  const app = await startServer({ store, port: 0, host: "127.0.0.1", providers, updates });
   return { app, store, file, base: `http://127.0.0.1:${app.port}`, say: (text) => transcribe(text, true) };
 }
 
@@ -66,6 +67,8 @@ test("rejects host API calls from other websites", async () => {
   try {
     const response = await fetch(`${base}/api/settings`, { headers: { Origin: "https://evil.example" } });
     assert.equal(response.status, 403);
+    assert.equal((await fetch(`${base}/api/update`, { headers: { Origin: "https://evil.example" } })).status, 403);
+    assert.equal((await (await fetch(`${base}/api/update`)).json()).latest, "0.2.0");
     await assert.rejects(open(`ws://127.0.0.1:${app.port}/ws/host`, { origin: "https://evil.example" }));
   } finally {
     await app.close();
