@@ -32,6 +32,8 @@ certificate, so the first launch needs one extra step:
 - **Mac:** open the `.dmg` and drag Speak To All into Applications, then open it.
   If macOS says it "could not verify" the app, open **System Settings → Privacy &
   Security**, scroll down, and click **Open Anyway**. Allow microphone access when asked.
+  After an update, macOS may ask to let Speak To All use "speaktoall-local Safe
+  Storage" in your keychain; click **Always Allow** to keep your saved API keys.
 - **Windows:** run the `.exe`. If SmartScreen appears, click **More info → Run anyway**.
   When Windows Firewall asks, allow access. If the church WiFi is marked as a
   *Public* network in Windows, tick **Public networks** too, or phones won't connect.

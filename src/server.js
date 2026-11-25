@@ -140,7 +140,7 @@ export async function startServer({ store, port = 4949, host = "0.0.0.0", provid
       return sendJson(res, 200, store.publicView());
     }
     if (pathname === "/api/settings" && req.method === "POST") {
-      const changes = store.update(await readJson(req));
+      const changes = await store.update(await readJson(req));
       broadcast.settingsChanged(changes);
       return sendJson(res, 200, store.publicView());
     }

@@ -7,7 +7,7 @@ import { createStore } from "./store.js";
 import { startServer } from "./server.js";
 
 const port = Number(process.env.PORT) || 4949;
-const store = createStore({ file: join(homedir(), ".speaktoall-local", "settings.json") });
+const store = await createStore({ file: join(homedir(), ".speaktoall-local", "settings.json") });
 const app = await startServer({ store, port });
 
 console.log(`\nSpeak To All is running.\n`);

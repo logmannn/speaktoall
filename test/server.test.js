@@ -10,7 +10,7 @@ import { startServer } from "../src/server.js";
 async function setup() {
   const dir = mkdtempSync(join(tmpdir(), "speaktoall-"));
   const file = join(dir, "settings.json");
-  const store = createStore({ file, env: {}, encrypt: (value) => `enc:${value}`, decrypt: (value) => value.slice(4) });
+  const store = await createStore({ file, env: {}, encrypt: async (value) => `enc:${value}`, decrypt: async (value) => ({ value: value.slice(4), stale: false }) });
   let transcribe;
   const providers = {
     openTranscriptionStream({ onTranscript }) {
@@ -99,7 +99,7 @@ test("only the caption display can be embedded in other apps", async () => {
 test("delivers captions and ordered audio from host to listeners", async () => {
   const { app, base, store, say } = await setup();
   try {
-    store.update({ openaiKey: "sk", deepgramKey: "dg", outputLanguages: ["es"] });
+    await store.update({ openaiKey: "sk", deepgramKey: "dg", outputLanguages: ["es"] });
     const host = await open(`ws://127.0.0.1:${app.port}/ws/host`, { origin: base });
     const listener = await open(`ws://127.0.0.1:${app.port}/ws/listen`);
     host.ws.send(JSON.stringify({ type: "start" }));

@@ -16,7 +16,14 @@ const DEFAULTS = Object.freeze({
 
 const MODEL_PATTERN = /^[\w.:-]{1,80}$/;
 
-export function createStore({ file, encrypt = (value) => value, decrypt = (value) => value, env = process.env }) {
+// encrypt(plain) -> Promise<stored>; decrypt(stored) -> Promise<{ value, stale }>,
+// where stale means the stored form should be re-encrypted (old format or rotated key).
+const plain = {
+  encrypt: async (value) => value,
+  decrypt: async (value) => ({ value, stale: false }),
+};
+
+export async function createStore({ file, encrypt = plain.encrypt, decrypt = plain.decrypt, env = process.env }) {
   let saved = {};
   try {
     saved = JSON.parse(readFileSync(file, "utf8"));
@@ -24,9 +31,21 @@ export function createStore({ file, encrypt = (value) => value, decrypt = (value
     if (error.code !== "ENOENT") console.warn(`Ignoring unreadable settings file ${file}: ${error.message}`);
   }
 
-  function readKey(name) {
-    if (!saved[name]) return "";
-    try { return decrypt(saved[name]); } catch { return ""; }
+  // Keys are decrypted once at startup and kept in memory.
+  const keys = { openaiKey: "", deepgramKey: "" };
+  let migrated = false;
+  for (const name of Object.keys(keys)) {
+    if (!saved[name]) continue;
+    try {
+      const { value, stale } = await decrypt(saved[name]);
+      keys[name] = value;
+      if (stale) {
+        saved[name] = await encrypt(value);
+        migrated = true;
+      }
+    } catch (error) {
+      console.warn(`Could not decrypt saved ${name}; it will need to be entered again: ${error.message}`);
+    }
   }
 
   function persist() {
@@ -36,14 +55,16 @@ export function createStore({ file, encrypt = (value) => value, decrypt = (value
     renameSync(temp, file);
   }
 
+  if (migrated) persist();
+
   return {
     // Full settings including keys. Never send this to a browser.
     get() {
       return {
         ...DEFAULTS,
         ...saved,
-        openaiKey: env.OPENAI_API_KEY || readKey("openaiKey"),
-        deepgramKey: env.DEEPGRAM_API_KEY || readKey("deepgramKey"),
+        openaiKey: env.OPENAI_API_KEY || keys.openaiKey,
+        deepgramKey: env.DEEPGRAM_API_KEY || keys.deepgramKey,
       };
     },
 
@@ -53,13 +74,14 @@ export function createStore({ file, encrypt = (value) => value, decrypt = (value
     },
 
     // Applies only recognized, valid fields. An empty key string removes that key.
-    update(patch) {
+    async update(patch) {
       const before = this.get();
-      for (const name of ["openaiKey", "deepgramKey"]) {
+      for (const name of Object.keys(keys)) {
         if (typeof patch[name] !== "string") continue;
         const key = patch[name].trim();
-        if (key) saved[name] = encrypt(key);
+        if (key) saved[name] = await encrypt(key);
         else delete saved[name];
+        keys[name] = key;
       }
       if (INPUT_LANGUAGES.includes(patch.inputLanguage)) saved.inputLanguage = patch.inputLanguage;
       if (Array.isArray(patch.outputLanguages)) {
